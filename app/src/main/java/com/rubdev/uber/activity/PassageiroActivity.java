@@ -255,8 +255,14 @@ public class PassageiroActivity extends AppCompatActivity implements OnMapReadyC
             @Override
             public void onLocationChanged(Location location) {
                 // recuperar lat e long
-                double latitude = location.getLatitude();
-                double longitude = location.getLongitude();
+
+                //Posicao Fake
+                double latitude = -3.757422;
+                double longitude = -38.488304;
+
+                //utilizando um gps Real
+                //double latitude = location.getLatitude();
+                //double longitude = location.getLongitude();
                 localPassageiro = new LatLng(latitude, longitude);
 
                 mMap.clear();

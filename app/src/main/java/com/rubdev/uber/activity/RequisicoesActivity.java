@@ -91,7 +91,7 @@ public class RequisicoesActivity extends AppCompatActivity {
 
     private  void  inicializarComponentes(){
 
-        getSupportActionBar().setTitle("Requisições");
+        getSupportActionBar().setTitle("Requisições de Caronas");
 
         //configurar componentes
         recyclerRequisicoes = findViewById(R.id.reciclerRequisicoes);

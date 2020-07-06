@@ -14,6 +14,8 @@ import com.google.android.gms.maps.OnMapReadyCallback;
 import com.google.android.gms.maps.SupportMapFragment;
 import com.google.android.gms.maps.model.BitmapDescriptorFactory;
 import com.google.android.gms.maps.model.LatLng;
+import com.google.android.gms.maps.model.LatLngBounds;
+import com.google.android.gms.maps.model.Marker;
 import com.google.android.gms.maps.model.MarkerOptions;
 import com.google.android.material.floatingactionbutton.FloatingActionButton;
 import com.google.android.material.snackbar.Snackbar;
@@ -47,10 +49,17 @@ public class CorridaActivity extends AppCompatActivity implements OnMapReadyCall
     private LocationManager locationManager;
     private LocationListener locationListener;
     private LatLng localMotorista;
+    private LatLng localPassageiro;
+
     private Usuario motorista;
+    private Usuario passageiro;
     private String idRequisicao;
     private Requisicao requisicao;
     private DatabaseReference firebaseRef;
+    private Marker marcadorMotorista;
+    private Marker marcadorPassageiro;
+    private String statusRequisicao;
+    private boolean requisicaoAtiva;
 
 
 
@@ -66,7 +75,12 @@ public class CorridaActivity extends AppCompatActivity implements OnMapReadyCall
         if ( getIntent().getExtras().containsKey("idRequisicao") && getIntent().getExtras().containsKey("motorista")){
             Bundle extras = getIntent().getExtras();
             motorista = (Usuario) extras.getSerializable("motorista" );
+            localMotorista = new LatLng(
+                    Double.parseDouble(motorista.getLatitude()),
+                    Double.parseDouble(motorista.getLongitude())
+            );
             idRequisicao = extras.getString("idRequisicao");
+            requisicaoAtiva = extras.getBoolean("requisicaoAtiva");
             verificaStatusRequisicao();
         }
 
@@ -77,9 +91,14 @@ public class CorridaActivity extends AppCompatActivity implements OnMapReadyCall
         requisicoes.addListenerForSingleValueEvent(new ValueEventListener() {
             @Override
             public void onDataChange(@NonNull DataSnapshot dataSnapshot) {
-                // recuperar a requisicao
 
+                // recuperar a requisicao
                 requisicao = dataSnapshot.getValue(Requisicao.class);
+                passageiro = requisicao.getPassageiro();
+                localPassageiro = new LatLng(
+                        Double.parseDouble(passageiro.getLatitude()),
+                        Double.parseDouble(passageiro.getLongitude())
+                );
 
                 switch ( requisicao.getStatus()){
                     case Requisicao.STATUS_AGUARDANDO :
@@ -103,7 +122,67 @@ public class CorridaActivity extends AppCompatActivity implements OnMapReadyCall
     }
 
     private void requisicaoACaminho(){
-        buttonAceitarCarona.setText("A caminho");
+        buttonAceitarCarona.setText("A caminho da carona");
+
+        // Exibir marcador do motorista
+        adicionarMarcadorMotorista(localMotorista, motorista.getNome());
+
+        // exibir marcador Passageiro
+        adicionarMarcadorPassageiro(localPassageiro, passageiro.getNome());
+
+        // centralizar os marcadores
+        centralizarDoisMarcadores(marcadorMotorista, marcadorPassageiro);
+    }
+
+    private void centralizarDoisMarcadores( Marker marcador1, Marker marcador2 ){
+        // Definir quais marcadores para definir os limites na tela
+        LatLngBounds.Builder builder = new LatLngBounds.Builder();
+
+        builder.include( marcador1.getPosition());
+        builder.include( marcador2.getPosition());
+
+        LatLngBounds bounds = builder.build();
+
+        //recuperando o tamanho da tela do dispositivo
+        int largura = getResources().getDisplayMetrics().widthPixels;
+        int  altura = getResources().getDisplayMetrics().heightPixels;
+        int espacoInterno = (int) (largura * 0.20);
+
+        mMap.moveCamera(
+                CameraUpdateFactory.newLatLngBounds(bounds, largura, altura, espacoInterno )
+        );
+
+    }
+
+
+    private void adicionarMarcadorMotorista(LatLng localizacao, String titulo ){
+
+        if ( marcadorMotorista != null )
+            marcadorMotorista.remove();
+
+        marcadorMotorista = mMap.addMarker(
+                                new MarkerOptions()
+                                .position( localizacao )
+                                .title( titulo )
+                                .icon(BitmapDescriptorFactory.fromResource(R.drawable.carro))
+        );
+
+    }
+
+    private void adicionarMarcadorPassageiro(LatLng localizacao, String titulo ){
+
+        if ( marcadorPassageiro != null )
+            marcadorPassageiro.remove();
+
+        marcadorPassageiro = mMap.addMarker(
+                new MarkerOptions()
+                        .position( localizacao )
+                        .title( titulo )
+                        .icon(BitmapDescriptorFactory.fromResource(R.drawable.usuario))
+        );
+        mMap.moveCamera(
+                CameraUpdateFactory.newLatLngZoom(localizacao, 17)
+        );
     }
 
 
