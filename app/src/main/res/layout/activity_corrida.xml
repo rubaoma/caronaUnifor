@@ -23,11 +23,11 @@
     <include layout="@layout/content_passageiro" />
 
     <Button
-        android:id="@+id/buttonAceitarCorrida"
+        android:id="@+id/buttonAceitarCarona"
         android:layout_width="match_parent"
         android:layout_height="60dp"
         android:layout_gravity="bottom"
-        android:onClick="aceitarCorrida"
+        android:onClick="aceitarCarona"
         android:text="@string/aceitar_carona" />
 
 </androidx.coordinatorlayout.widget.CoordinatorLayout>

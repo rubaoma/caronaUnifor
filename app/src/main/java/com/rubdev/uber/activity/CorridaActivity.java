@@ -18,17 +18,29 @@ import com.google.android.gms.maps.model.MarkerOptions;
 import com.google.android.material.floatingactionbutton.FloatingActionButton;
 import com.google.android.material.snackbar.Snackbar;
 
+import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.appcompat.widget.Toolbar;
 import androidx.core.app.ActivityCompat;
 
+import android.provider.ContactsContract;
 import android.view.View;
+import android.widget.Button;
 
+import com.google.firebase.auth.FirebaseAuth;
+import com.google.firebase.database.DataSnapshot;
+import com.google.firebase.database.DatabaseError;
+import com.google.firebase.database.DatabaseReference;
+import com.google.firebase.database.ValueEventListener;
 import com.rubdev.uber.R;
+import com.rubdev.uber.config.ConfiguracaoFirebase;
 import com.rubdev.uber.model.Requisicao;
 import com.rubdev.uber.model.Usuario;
 
 public class CorridaActivity extends AppCompatActivity implements OnMapReadyCallback {
+
+    // componente
+    private Button buttonAceitarCarona;
 
 
     private GoogleMap mMap;
@@ -38,6 +50,8 @@ public class CorridaActivity extends AppCompatActivity implements OnMapReadyCall
     private Usuario motorista;
     private String idRequisicao;
     private Requisicao requisicao;
+    private DatabaseReference firebaseRef;
+
 
 
     @Override
@@ -53,8 +67,43 @@ public class CorridaActivity extends AppCompatActivity implements OnMapReadyCall
             Bundle extras = getIntent().getExtras();
             motorista = (Usuario) extras.getSerializable("motorista" );
             idRequisicao = extras.getString("idRequisicao");
+            verificaStatusRequisicao();
         }
 
+    }
+
+    private void verificaStatusRequisicao(){
+        DatabaseReference requisicoes = firebaseRef.child("requisicoes").child(idRequisicao);
+        requisicoes.addListenerForSingleValueEvent(new ValueEventListener() {
+            @Override
+            public void onDataChange(@NonNull DataSnapshot dataSnapshot) {
+                // recuperar a requisicao
+
+                requisicao = dataSnapshot.getValue(Requisicao.class);
+
+                switch ( requisicao.getStatus()){
+                    case Requisicao.STATUS_AGUARDANDO :
+                        requisicaoAguardando();
+                        break;
+                    case Requisicao.STATUS_A_CAMINHO :
+                        requisicaoACaminho();
+                        break;
+                }
+            }
+
+            @Override
+            public void onCancelled(@NonNull DatabaseError databaseError) {
+
+            }
+        });
+    }
+
+    private void  requisicaoAguardando(){
+        buttonAceitarCarona.setText("Aceitar Carona");
+    }
+
+    private void requisicaoACaminho(){
+        buttonAceitarCarona.setText("A caminho");
     }
 
 
@@ -76,6 +125,7 @@ public class CorridaActivity extends AppCompatActivity implements OnMapReadyCall
         recuperarLocalizacaoUsuario();
 
     }
+    // metodo para informar a posicao do motorista
     private void recuperarLocalizacaoUsuario() {
 
         locationManager = (LocationManager) this.getSystemService(Context.LOCATION_SERVICE);
@@ -83,8 +133,12 @@ public class CorridaActivity extends AppCompatActivity implements OnMapReadyCall
             @Override
             public void onLocationChanged(Location location) {
                 // recuperar lat e long
-                double latitude = location.getLatitude();
-                double longitude = location.getLongitude();
+
+                //posicao unifor
+                double latitude = -3.769273;
+                double longitude = -38.481545;
+                //double latitude = location.getLatitude();
+                //double longitude = location.getLongitude();
                 localMotorista = new LatLng(latitude, longitude);
 
                 mMap.clear();
@@ -126,7 +180,7 @@ public class CorridaActivity extends AppCompatActivity implements OnMapReadyCall
         }
     }
 
-    private void aceitarCorrida(View view){
+    public void aceitarCarona(View view){
         // configurar requisicao
         requisicao = new Requisicao();
         requisicao.setId( idRequisicao );
@@ -145,7 +199,14 @@ public class CorridaActivity extends AppCompatActivity implements OnMapReadyCall
         setSupportActionBar(toolbar);
 
         getSupportActionBar().setDisplayHomeAsUpEnabled(true);
-        getSupportActionBar().setTitle("Iniciar Corrida");
+        getSupportActionBar().setTitle("Iniciar Carona");
+
+        buttonAceitarCarona = findViewById(R.id.buttonAceitarCarona);
+
+        // config iniciais
+
+        firebaseRef = ConfiguracaoFirebase.getFirebaseDatabase();
+
 
         // Inicializar o componente do mapa -- Obtain the SupportMapFragment and get notified when the map is ready to be used.
         SupportMapFragment mapFragment = (SupportMapFragment) getSupportFragmentManager()
